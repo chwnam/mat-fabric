@@ -5,10 +5,15 @@
 =======
 Python2 를 사용한 fabric 스크립트입니다.
 
-* git 을 인증 생략하고 사용하기 위해서는 미리 서버의 ssh 공개 키를 해당 서버에 등록하기 바랍니다.
+* git 을 인증 생략하고 사용하기 위해서는 미리 개발 PC의 ssh 공개 키를 서버에 등록하기 바랍니다.
+* git 의 pull 인증 절차를 생략하기 위해서는 github.com 에서 deployment 만을 위한 키를 등록하기 바랍니다.
+
 * 사용 예:
     fab production deploy
     fab production reset
+
+* 만약 브랜치를 deploy 하고 싶다면 다음과 같이 하면 됩니다.
+    fab test:branch=<branch-name> deploy
 """
 from __future__ import print_function
 from fabric.api import cd, env, run, task, prefix
