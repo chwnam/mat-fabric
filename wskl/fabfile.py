@@ -18,15 +18,36 @@ import sys
 
 git_url = 'ssh://git@ssh.github.com:443/chwnam/woosym-korean-localization.git'
 
+test_host = '115.68.110.13'
+test_project_root = '/var/zpanel/hostdata/mbm/public_html/wp-content/plugins/woosym-korean-localization'
+test_user = 'dabory'
+
 production_host = '115.68.110.13'
 production_project_root = '/var/zpanel/hostdata/dabory/public_html/wp-content/plugins/woosym-korean-localization'
 production_user = 'dabory'
+
+# AGS (올더게이트) 결제 모듈은 log 디렉토리를 만들고, 실행 권한을 달라고 함.
+# 로그를 보내지 않도록 코드를 수정하기는 했지만, 혹시 모르므로 이렇게 처리함.
+ags_log_path = 'includes/lib/homeags/log'
+
+# KCP 결제 모듈은 binary 파일을 심어 두고 실행 권한을 달라고 함. 단, AGS 처럼 log 파일을
+kcp_bin_path = 'includes/lib/homekcp/bin'
+kcp_bin_targets = ('pp_cli', 'pp_cli_32', 'pp_cli_64', )
 
 
 def check_env():
     if not env.hosts:
         print('Specify environment first!\ne.g)\n\t$ fab production deploy', file=sys.stderr)
         sys.exit(1)
+
+
+@task
+def test(branch='master'):
+    env.host_name = 'Dabory'
+    env.branch = branch
+    env.hosts = test_host
+    env.project_root = test_project_root
+    env.user = test_user
 
 
 @task
@@ -44,11 +65,24 @@ def deploy():
 
     print('Deploying to server \'%s\'...' % env.host_name)
 
+    # KCP 결제 모듈 선처리: 바이너리 삭제
+    with cd(os.path.join(env.project_root, kcp_bin_path)):
+        for t in kcp_bin_targets:
+            run('rm %s' % t)
+
     with cd(env.project_root):
         with prefix('if [[ -n $SSH_ASKPASS ]]; then unset SSH_ASKPASS; fi'):
             run('git fetch')
             run('git checkout %s' % env.branch)
             run('git pull')
+
+    # AGS 결제 모듈 후처리
+    run('chmod 755 %s' % os.path.join(env.project_root, ags_log_path))
+
+    # KCP 결제 모듈 후처리
+    with cd(os.path.join(env.project_root, kcp_bin_path)):
+        for t in kcp_bin_targets:
+            run('chmod +x %s' % t)
 
 
 @task
