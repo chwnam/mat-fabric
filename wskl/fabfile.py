@@ -16,7 +16,7 @@ from fabric.api import cd, env, run, task, prefix
 import os
 import sys
 
-git_url = 'ssh://git@altssh.bitbucket.org:443/changwoo/wskl.git'
+git_url = 'ssh://git@ssh.github.com:443/chwnam/woosym-korean-localization.git'
 
 production_host = '115.68.110.13'
 production_project_root = '/var/zpanel/hostdata/dabory/public_html/wp-content/plugins/woosym-korean-localization'
