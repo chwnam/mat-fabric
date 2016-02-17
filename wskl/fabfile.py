@@ -171,8 +171,8 @@ def release(branch='master'):
         output_file_zip = 'wskl-%s.zip' % version_info
 
         relative_dir = os.path.basename(env.project_root)
-        latest_file_gz = 'wskl-latest.tar.gz'
-        latest_file_zip = 'wskl-latest.zip'
+        latest_file_gz = 'latest.tar.gz'
+        latest_file_zip = 'latest.zip'
 
         run('tar cpzf %s %s' % (output_file_gz, relative_dir))
         run('zip -r %s %s' % (output_file_zip, relative_dir))
