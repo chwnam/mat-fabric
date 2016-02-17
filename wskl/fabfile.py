@@ -11,14 +11,19 @@ Python2 를 사용한 fabric 스크립트입니다.
 * 사용 예:
     fab production deploy
     fab production reset
+    fab test deploy
+    fab test reset
 
 * 만약 브랜치를 deploy 하고 싶다면 다음과 같이 하면 됩니다.
     fab test:branch=<branch-name> deploy
 """
 from __future__ import print_function
-from fabric.api import cd, env, run, task, prefix
+from fabric.api import cd, env, hosts, run, task, prefix
+from fabric.contrib.files import exists as remote_exists
+from fabric.colors import red, green
 
 import os
+import re
 import sys
 
 git_url = 'ssh://git@ssh.github.com:443/chwnam/woosym-korean-localization.git'
@@ -30,6 +35,10 @@ test_user = 'dabory'
 production_host = '115.68.110.13'
 production_project_root = '/var/zpanel/hostdata/dabory/public_html/wp-content/plugins/woosym-korean-localization'
 production_user = 'dabory'
+
+release_host = '115.68.110.13'
+release_project_root = '/var/zpanel/hostdata/dabory/wskl/woosym-korean-localization'
+release_user = 'dabory'
 
 # AGS (올더게이트) 결제 모듈은 log 디렉토리를 만들고, 실행 권한을 달라고 함.
 # 로그를 보내지 않도록 코드를 수정하기는 했지만, 혹시 모르므로 이렇게 처리함.
@@ -71,9 +80,9 @@ def deploy():
     print('Deploying to server \'%s\'...' % env.host_name)
 
     # KCP 결제 모듈 선처리: 바이너리 삭제
-    with cd(os.path.join(env.project_root, kcp_bin_path)):
-        for t in kcp_bin_targets:
-            run('rm %s' % t)
+    # with cd(os.path.join(env.project_root, kcp_bin_path)):
+    #     for t in kcp_bin_targets:
+    #         run('rm %s' % t)
 
     with cd(env.project_root):
         with prefix('if [[ -n $SSH_ASKPASS ]]; then unset SSH_ASKPASS; fi'):
@@ -110,3 +119,70 @@ def reset():
     with cd(path):
         with prefix('if [[ -n $SSH_ASKPASS ]]; then unset SSH_ASKPASS; fi'):
             run('git clone "%s" "%s"' % (git_url, clone_name, ))
+
+
+@hosts([release_host, ])
+@task
+def release(branch='master'):
+    env.host_name = 'Dabory'
+    env.branch = branch
+    env.project_root = release_project_root
+    env.user = release_user
+
+    print('Releasing woosym-korean-localization...')
+
+    if not remote_exists(os.path.join(release_project_root, '.git')):
+        print('.git not present! Cloning from git repository...')
+
+        run('rm -rf "%s"' % env.project_root)
+        path = os.path.dirname(env.project_root)
+        clone_name = os.path.basename(env.project_root)
+
+        # git clone
+        with cd(path):
+            with prefix('if [[ -n $SSH_ASKPASS ]]; then unset SSH_ASKPASS; fi'):
+                run('git clone "%s" "%s"' % (git_url, clone_name, ))
+                run('git checkout %s' % env.branch)
+    else:
+        with cd(env.project_root):
+            with prefix('if [[ -n $SSH_ASKPASS ]]; then unset SSH_ASKPASS; fi'):
+                run('git fetch')
+                run('git checkout %s' % env.branch)
+                run('git pull')
+
+    # AGS 결제 모듈 후처리
+    run('chmod 755 %s' % os.path.join(env.project_root, ags_log_path))
+
+    # retrieve version
+    with cd(env.project_root):
+        out = run('grep \"define( \'WSKL_VERSION\', \" woosym-korean-localization.php')
+        s = re.search(r'define\(\s*(\'|\")WSKL_VERSION(\'|\"),\s*\'(.+)\'\s*\);', out.stdout.strip())
+
+        if s:
+            version_info = s.groups()[2]
+            print(green('Current branch\'s WSKL version: %s' % version_info))
+        else:
+            version_info = 'unversioned'
+            print(red('Version information not found! Setting version name as %s' % version_info))
+
+    # creating archive
+    with cd(os.path.dirname(env.project_root)):
+        output_file_gz = 'wskl-%s.tar.gz' % version_info
+        output_file_zip = 'wskl-%s.zip' % version_info
+
+        relative_dir = os.path.basename(env.project_root)
+        latest_file_gz = 'wskl-latest.tar.gz'
+        latest_file_zip = 'wskl-latest.zip'
+
+        run('tar cpzf %s %s' % (output_file_gz, relative_dir))
+        run('zip -r %s %s' % (output_file_zip, relative_dir))
+
+        print(green('Do you want to make current output files be aliased as latest?'))
+        q = raw_input('y/N ')
+
+        if q.lower() == 'y':
+            print(green('You have answered \'Yes\'. Creating soft symlink.'))
+            run('rm -f %s' % latest_file_gz)
+            run('rm -f %s' % latest_file_zip)
+            run('ln -s %s %s' % (output_file_gz, latest_file_gz))
+            run('ln -s %s %s' % (output_file_zip, latest_file_zip))
