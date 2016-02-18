@@ -174,8 +174,11 @@ def release(branch='master'):
         latest_file_gz = 'latest.tar.gz'
         latest_file_zip = 'latest.zip'
 
-        run('tar cpzf %s %s' % (output_file_gz, relative_dir))
-        run('zip -r %s %s' % (output_file_zip, relative_dir))
+        run('rm -f %s' % output_file_gz)
+        run('tar -cpzf %s --exclude=\'.git\' --exclude=\'.gitignore\' %s' % (output_file_gz, relative_dir))
+
+        run('rm -f %s' % output_file_zip)
+        run('zip -r %s %s -x \\*/*.git\\* \\*/.gitignore' % (output_file_zip, relative_dir))
 
         print(green('Do you want to make current output files be aliased as latest?'))
         q = raw_input('y/N ')
