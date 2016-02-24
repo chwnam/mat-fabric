@@ -90,8 +90,8 @@ def deploy():
             run('git checkout %s' % env.branch)
             run('git pull')
 
-    # AGS 결제 모듈 후처리
-    run('chmod 755 %s' % os.path.join(env.project_root, ags_log_path))
+    # AGS 결제 모듈 후처리. 플러그인 디렉토리의 소유 권한을 체크할 것.
+    run('chmod +x %s' % os.path.join(env.project_root, ags_log_path))
 
     # KCP 결제 모듈 후처리
     with cd(os.path.join(env.project_root, kcp_bin_path)):
