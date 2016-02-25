@@ -37,7 +37,7 @@ git_url = 'ssh://git@altssh.bitbucket.org:443/changwoo/casper.git'
 
 production_host = '115.68.110.13'
 # production_project_root = '/var/zpanel/hostdata/dabory/public_html/wp-content/plugins/casper'
-production_project_root = '/var/zpanel/hostdata/dabory/casper-test'
+production_project_root = '/var/zpanel/hostdata/dabory/public_html/wp-content/plugins/casper-git'
 production_user = 'dabory'
 production_php = '/opt/php-5.6/bin/php'
 
@@ -70,7 +70,8 @@ def deploy():
             run('git checkout %s' % env.branch)
             run('git pull')
 
-        run('php composer.phar dump-autoload --optimize')
+        run(env.php + ' composer.phar update')
+        run(env.php + ' composer.phar dump-autoload --optimize')
 
 
 @task
@@ -97,10 +98,11 @@ def reset():
     # get composer
     with cd(env.project_root):
         run(env.php + ' -r \"readfile(\'https://getcomposer.org/installer\');\" > composer-setup.php')
-        run(env.php + ' -r \"if (hash(\'SHA384\', file_get_contents(\'composer-setup.php\')) === \'781c98992e23d4a5ce559daf0170f8a9b3b91331ddc4a3fa9f7d42b6d981513cdc1411730112495fbf9d59cffbf20fb2\') { echo \'Installer verified\'; } else { echo \'Installer corrupt\'; unlink(\'composer-setup.php\'); }\"')
+        # run(env.php + ' -r \"if (hash(\'SHA384\', file_get_contents(\'composer-setup.php\')) === \'781c98992e23d4a5ce559daf0170f8a9b3b91331ddc4a3fa9f7d42b6d981513cdc1411730112495fbf9d59cffbf20fb2\') { echo \'Installer verified\'; } else { echo \'Installer corrupt\'; unlink(\'composer-setup.php\'); }\"')
         run(env.php + ' -d suhosin.executor.include.whitelist=phar composer-setup.php')
         run(env.php + ' -r "unlink(\'composer-setup.php\');"')
-        run('chmod +x composer.phar')
+        run(env.php + ' composer.phar install')
+        run(env.php + ' composer.phar dump-autoload --optimize')
 
 
 @hosts(['localhost:2222', ])
