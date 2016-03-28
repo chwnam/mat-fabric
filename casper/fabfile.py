@@ -3,14 +3,6 @@
 """
 일러두기
 =======
-* CASPER 용 *
-* CASPER 용 *
-* CASPER 용 *
-* CASPER 용 *
-* CASPER 용 *
-* CASPER 용 *
-* 아직 캐스퍼에서 검증되지 않았으므로 하지 말 것"
-
 Python2 를 사용한 fabric 스크립트입니다.
 
 * git 을 인증 생략하고 사용하기 위해서는 미리 개발 PC의 ssh 공개 키를 서버에 등록하기 바랍니다.
@@ -36,8 +28,7 @@ import sys
 git_url = 'ssh://git@altssh.bitbucket.org:443/changwoo/casper.git'
 
 production_host = '115.68.110.13'
-# production_project_root = '/var/zpanel/hostdata/dabory/public_html/wp-content/plugins/casper'
-production_project_root = '/var/zpanel/hostdata/dabory/public_html/wp-content/plugins/casper-git'
+production_project_root = '/var/zpanel/hostdata/dabory/public_html/wp-content/plugins/casper'
 production_user = 'dabory'
 production_php = '/opt/php-5.6/bin/php'
 
@@ -70,6 +61,15 @@ def deploy():
             run('git checkout %s' % env.branch)
             run('git pull')
 
+        run(env.php + ' composer.phar dump-autoload --optimize')
+
+
+@task
+def composer_update():
+    check_env()
+    print(green('Updating composer settings \'%s\'...' % env.host_name))
+
+    with cd(env.project_root):
         run(env.php + ' composer.phar update')
         run(env.php + ' composer.phar dump-autoload --optimize')
 

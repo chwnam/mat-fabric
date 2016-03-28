@@ -29,7 +29,7 @@ import sys
 git_url = 'ssh://git@ssh.github.com:443/chwnam/woosym-korean-localization.git'
 
 test_host = '115.68.110.13'
-test_project_root = '/var/zpanel/hostdata/mbm/public_html/wp-content/plugins/woosym-korean-localization'
+test_project_root = '/var/zpanel/hostdata/stud05/public_html/wp-content/plugins/woosym-korean-localization'
 test_user = 'dabory'
 
 production_host = '115.68.110.13'
